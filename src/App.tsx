@@ -1,8 +1,8 @@
 import React from "react";
-import FloatWord from "./float-word/FloatWord";
+import ToyBox from "./toy-box/ToyBox";
 
 function App() {
-  return <FloatWord text="formegusto" />;
+  return <ToyBox text="formegusto" />;
 }
 
 export default App;
