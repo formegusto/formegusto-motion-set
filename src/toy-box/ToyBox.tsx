@@ -1,38 +1,11 @@
 import React from "react";
-import styled from "styled-components";
-import { TextAnimationGen } from "./Animations";
+import styled, { css } from "styled-components";
 
 type Props = {
   text: string;
+  size: number;
+  fontSize?: number;
 };
-
-function initPosition(text: string) {
-  const box = document.getElementById("box") as HTMLDivElement;
-  console.log("Box", box?.getClientRects());
-
-  const {
-    x: boxX,
-    y: boxY,
-    width: boxW,
-    height: boxH,
-  } = box!.getClientRects()[0];
-
-  text.split("").forEach((t, idx) => {
-    const textSpan = document.getElementById(
-      `text-${idx}-${t}`
-    ) as HTMLSpanElement;
-    console.log(`text-${idx}-${t}`, textSpan.getClientRects());
-    const { x: textX, y: textY } = textSpan.getClientRects()[0];
-    textSpan!.style.transform =
-      "translateX(" +
-      (boxX - textX + boxW / 2) +
-      "px) " +
-      "translateY(" +
-      (boxY - textY + boxH / 2) +
-      "px) " +
-      "rotateY(-20deg)";
-  });
-}
 
 function boxOpen() {
   const boxTopEl = document.getElementById("box-top");
@@ -41,72 +14,141 @@ function boxOpen() {
   boxTopEl!.style.transform = "rotateX(220deg)";
 }
 
-function ToyBox({ text }: Props) {
-  React.useEffect(() => {
-    initPosition(text);
+function transition_1(t: string, idx: number) {
+  const textSpan = document.getElementById(
+    `text-${idx}-${t}`
+  ) as HTMLSpanElement;
+  const textShadowSpan = document.getElementById(`shadow-text-${idx}-${t}`);
+  const boxEl = document.getElementById("box");
 
+  console.log("Text Offset:", textSpan?.getClientRects());
+  console.log("Shadow Offset:", textShadowSpan?.getClientRects());
+
+  const { x: text_x, y: text_y } = textSpan.getClientRects()[0];
+  const { x: shadow_x, y: shadow_y } = textShadowSpan!.getClientRects()[0];
+  const { width: boxWidth } = boxEl!.getClientRects()[0];
+  const err = {
+    x: text_x - shadow_x,
+    y: text_y - shadow_y,
+  };
+
+  textSpan!.addEventListener("transitionend", () => {
+    textSpan!.style.transition = "0.6s linear";
+    textSpan!.style.transform =
+      "translateX(" + err.x * -1 + "px)" + "translateY(" + err.y * -1 + "px)";
+  });
+  console.log("boxWidth", boxWidth);
+  const boxHalfWidth = boxWidth / 2;
+  console.log("boxHalfWidth", boxHalfWidth);
+  console.log("ERR X", err.x);
+
+  const errType = err.x < 0 ? -1 : 1;
+  const tranX =
+    (err.x * errType) / 2 > boxHalfWidth
+      ? boxHalfWidth * errType * -1
+      : (err.x / 2) * -1;
+  textSpan!.style.transition = "0.2s linear";
+  textSpan!.style.transform =
+    "translateX(" +
+    tranX +
+    "px)" +
+    "translateY(" +
+    (err.y / 2.25) * -1 +
+    "px) ";
+}
+
+function ToyBox({ text, size, fontSize }: Props) {
+  React.useEffect(() => {
     const boxTopEl = document.getElementById("box-top");
     boxTopEl?.addEventListener("transitionend", () => {
       text.split("").forEach((t, idx) => {
         setTimeout(() => {
-          const textSpan = document.getElementById(
-            `text-${idx}-${t}`
-          ) as HTMLSpanElement;
-          //   textSpan!.style.transition = "1s";
-          //   textSpan!.style.transform = "";
-          textSpan.classList.add("active");
+          transition_1(t, idx);
         }, idx * 300);
       });
     });
-
     boxOpen();
   });
 
   return (
-    <ToyBoxDimension>
-      <TextWrap>
+    <ToyBoxDimension size={size}>
+      <TextWrap size={size}>
         {text.split("").map((t, idx) => (
-          <TextItem key={idx} id={`text-${idx}-${t}`}>
+          <TextItem
+            key={idx}
+            id={`shadow-text-${idx}-${t}`}
+            fontSize={fontSize}
+          >
             {t}
           </TextItem>
         ))}
       </TextWrap>
-      <Box.Wrap id="box">
+      <Box.Wrap id="box" size={size}>
+        {text.split("").map((t, idx) => (
+          <AniText key={idx} id={`text-${idx}-${t}`} fontSize={fontSize}>
+            {t}
+          </AniText>
+        ))}
         {BOXSET.map((BoxItem, idx) => (
-          <BoxItem key={idx} />
+          <BoxItem key={idx} size={size} />
         ))}
       </Box.Wrap>
     </ToyBoxDimension>
   );
 }
 
-const ToyBoxDimension = styled.div`
+type StyleProps = {
+  size?: number;
+  fontSize?: number;
+};
+
+const ToyBoxDimension = styled.div<StyleProps>`
   position: absolute;
   top: 150px;
-  left: 150px;
+  left: ${({ size }) => size! / 2}px;
   perspective: 1000px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 `;
 
-const TextWrap = styled.div`
-  margin: 0 0 100px -50px;
+const TextWrap = styled.div<StyleProps>`
+  margin: 0 0 ${({ size }) => size! + 40}px ${({ size }) => size! / 2}px;
+  opacity: 0;
 `;
-const TextItem = styled.span`
+
+const TextItem = styled.span<StyleProps>`
   display: inline-block;
-  margin: 0 16px 0 0;
+  margin: 0 12px 0 0;
+  ${({ fontSize }) =>
+    fontSize &&
+    css`
+      font-size: ${fontSize}px;
+    `}/* 
+  color: rgba(0, 0, 0, 0.3); */
+`;
 
-  &.active {
-    animation: ${TextAnimationGen({})} 1s;
-  }
+const AniText = styled.span<StyleProps>`
+  position: absolute;
+  ${({ fontSize }) =>
+    fontSize &&
+    css`
+      font-size: ${fontSize}px;
+    `}
 `;
 
 const Box = {
-  Wrap: styled.div`
+  Wrap: styled.div<StyleProps>`
     position: relative;
-    width: 100px;
-    height: 100px;
+    width: ${({ size }) => size}px;
+    height: ${({ size }) => size}px;
     transform-style: preserve-3d;
 
     transform: rotateX(-20deg) rotateY(-20deg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
 
     & div {
       position: absolute;
@@ -122,44 +164,52 @@ const Box = {
       background-color: #fff;
     }
   `,
-  Front: styled.div`
+  Front: styled.div<StyleProps>`
     transform-origin: 50% 50%;
-    transform: translateZ(50px);
+    transform: translateZ(${({ size }) => size! / 2}px);
   `,
-  Back: styled.div`
+  Back: styled.div<StyleProps>`
     transform-origin: 50% 50%;
-    transform: translateZ(-50px);
+    transform: translateZ(-${({ size }) => size! / 2}px);
 
     transform-style: preserve-3d;
   `,
-  Top: styled.div`
+  Top: styled.div<StyleProps>`
     transform-origin: 50% 0%;
     transform: rotateX(90deg);
   `,
-  Bottom: styled.div`
+  Bottom: styled.div<StyleProps>`
     transform-origin: 50% 50%;
-    transform: rotateX(90deg) translateZ(-50px);
+    transform: rotateX(90deg) translateZ(-${({ size }) => size! / 2}px);
   `,
-  Left: styled.div`
+  Left: styled.div<StyleProps>`
     transform-origin: 50% 50%;
-    transform: rotateY(90deg) translateZ(-50px);
+    transform: rotateY(90deg) translateZ(-${({ size }) => size! / 2}px);
   `,
-  Right: styled.div`
+  Right: styled.div<StyleProps>`
     transform-origin: 50% 50%;
-    transform: rotateY(90deg) translateZ(50px);
+    transform: rotateY(90deg) translateZ(${({ size }) => size! / 2}px);
   `,
 };
 
 const BOXSET = [
-  () => <Box.Front id="box-front" />,
-  () => (
-    <Box.Back id="box-back">
-      <Box.Top id="box-top" />
+  (props: React.PropsWithRef<StyleProps>) => (
+    <Box.Front id="box-front" {...props} />
+  ),
+  (props: React.PropsWithRef<StyleProps>) => (
+    <Box.Back id="box-back" {...props}>
+      <Box.Top id="box-top" {...props} />
     </Box.Back>
   ),
-  () => <Box.Bottom id="box-bottom" />,
-  () => <Box.Left id="box-left" />,
-  () => <Box.Right id="box-right" />,
+  (props: React.PropsWithRef<StyleProps>) => (
+    <Box.Bottom id="box-bottom" {...props} />
+  ),
+  (props: React.PropsWithRef<StyleProps>) => (
+    <Box.Left id="box-left" {...props} />
+  ),
+  (props: React.PropsWithRef<StyleProps>) => (
+    <Box.Right id="box-right" {...props} />
+  ),
 ];
 
 export default ToyBox;
