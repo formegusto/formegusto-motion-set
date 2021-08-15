@@ -1,5 +1,4 @@
 import React from "react";
-import { useCallback } from "react";
 import styled, { css } from "styled-components";
 
 interface StyleProps {
@@ -8,58 +7,100 @@ interface StyleProps {
 }
 
 interface Props {
-  text: string;
+  text: string[];
   style?: StyleProps;
 }
 
+const PART = ["one", "two", "three", "four"];
+
 function FloatWord({ text, style }: Props) {
-  const returnPosition: any = useCallback(function (
+  const returnPosition: any = React.useCallback(function (
     this: HTMLSpanElement,
     e: TransitionEvent
   ) {
     this.style.transition = `${Math.random() * 3 + 3}s linear`;
 
-    this.style.transform = `translateX(${
-      Math.random() * 218 - Number.parseFloat(this.style.left.replace("px", ""))
-    }px) translateY(${
-      Math.random() * 218 - Number.parseFloat(this.style.top.replace("px", ""))
+    this.style.transform = `translateX(${Math.random() * 125}px) translateY(${
+      Math.random() * 125
     }px)`;
   },
   []);
-  React.useEffect(() => {
-    text.split("").forEach((t, idx) => {
-      const textEl = document.querySelector<HTMLSpanElement>(`#word-${idx}`);
-      textEl!.style.transition = `${Math.random() * 10}s linear`;
-      textEl!.style.transform = `translateX(${
-        Math.random() * 218 -
-        Number.parseFloat(textEl!.style.left.replace("px", ""))
-      }px) translateY(${
-        Math.random() * 218 -
-        Number.parseFloat(textEl!.style.top.replace("px", ""))
-      }px)`;
-      textEl?.addEventListener("transitionend", returnPosition);
 
-      console.log(`text:${t}`, textEl?.style.transform);
+  const resetPosition = React.useCallback(() => {
+    console.log("Reset Position");
+    text.forEach((t, ti) => {
+      t.split("").forEach((w, wi) => {
+        const textEl = document.querySelector<HTMLSpanElement>(
+          `#word-${ti}-${wi}-${w}`
+        );
+        textEl?.removeEventListener("transitionend", returnPosition);
+        textEl!.style.transition = `0.8s linear`;
+        textEl!.style.transform = "";
+        console.log(`text:${w}`, textEl?.style.transform);
+      });
+    });
+  }, [text, returnPosition]);
+
+  const restartPosition = React.useCallback(() => {
+    console.log("Restart Position");
+    text.forEach((t, ti) => {
+      t.split("").forEach((w, wi) => {
+        const textEl = document.querySelector<HTMLSpanElement>(
+          `#word-${ti}-${wi}-${w}`
+        );
+        textEl!.style.transition = `${Math.random() * 10}s linear`;
+        textEl!.style.transform = `translateX(${
+          Math.random() * 125
+        }px) translateY(${Math.random() * 125}px)`;
+        textEl?.addEventListener("transitionend", returnPosition);
+        console.log(`text:${w}`, textEl?.style.transform);
+      });
+    });
+  }, [text, returnPosition]);
+
+  React.useEffect(() => {
+    text.forEach((t, ti) => {
+      t.split("").forEach((w, wi) => {
+        const textEl = document.querySelector<HTMLSpanElement>(
+          `#word-${ti}-${wi}-${w}`
+        );
+        textEl!.style.transition = `${Math.random() * 10}s linear`;
+        textEl!.style.transform = `translateX(${
+          Math.random() * 125
+        }px) translateY(${Math.random() * 125}px)`;
+        textEl?.addEventListener("transitionend", returnPosition);
+        console.log(`text:${w}`, textEl?.style.transform);
+      });
     });
   });
   return (
-    <Wrap {...style}>
+    <Wrap
+      {...style}
+      onMouseEnter={() => resetPosition()}
+      onMouseLeave={() => restartPosition()}
+    >
       <HorizontalLine className="horizontal line" />
       <VerticalLine className="vertical line" />
-      <WordWrap className="wrap">
-        {text.split("").map((t, idx) => (
-          <Word
-            key={idx}
-            id={`word-${idx}`}
-            style={{
-              top: Math.random() * 218,
-              left: Math.random() * 218,
-            }}
-          >
-            {t}
-          </Word>
-        ))}
-      </WordWrap>
+      {text.map((t, ti) => (
+        <WordWrap className={`wrap ${PART[ti]}`} key={`ti-${ti}`}>
+          {t.split("").map((w, wi) => (
+            <Word
+              key={`ti-${ti}-wi-${wi}`}
+              id={`word-${ti}-${wi}-${w}`}
+              style={{
+                transform:
+                  "translateX(" +
+                  Math.random() * 125 +
+                  "px) translateY(" +
+                  Math.random() * 125 +
+                  "px)",
+              }}
+            >
+              {w}
+            </Word>
+          ))}
+        </WordWrap>
+      ))}
     </Wrap>
   );
 }
@@ -67,6 +108,8 @@ function FloatWord({ text, style }: Props) {
 const Wrap = styled.div<StyleProps>`
   position: relative;
   cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
 
   & > .line {
     position: absolute;
@@ -80,10 +123,10 @@ const Wrap = styled.div<StyleProps>`
     ${({ color }) =>
       color
         ? css`
-            border: 2px solid ${color};
+            border: 1px solid ${color};
           `
         : css`
-            border: 2px solid #333;
+            border: 1px solid #333;
           `}
     border-radius: 100%;
     transition: 0.7s;
@@ -125,23 +168,45 @@ const Wrap = styled.div<StyleProps>`
 `;
 
 const HorizontalLine = styled.div``;
-
 const VerticalLine = styled.div``;
-
 const WordWrap = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  /* position: absolute; */
+  /* top: 0;
+  left: 0; */
+  width: 50%;
+  height: 50%;
 
-  border-radius: 100%;
-
-  overflow: hidden;
+  /* overflow: hidden; */
   transition: 0.7s;
+  display: flex;
+  box-sizing: border-box;
+
+  &.one {
+    border-radius: 100% 0 0 0;
+    justify-content: flex-end;
+    align-items: flex-end;
+    padding: 0 8px 8px 0;
+  }
+
+  &.two {
+    border-radius: 0 100% 0 0;
+    align-items: flex-end;
+    padding: 0 0 8px 8px;
+  }
+
+  &.three {
+    border-radius: 0 0 100% 0;
+    justify-content: flex-end;
+    padding: 8px 8px 0 0;
+  }
+
+  &.four {
+    border-radius: 0 0 0 100%;
+    padding: 8px 0 0 8px;
+  }
 `;
 const Word = styled.span`
-  position: absolute;
+  /* position: absolute; */
 
   font-size: 2rem;
 `;
