@@ -119,6 +119,7 @@ const Wrap = styled.div<StyleProps>`
     height: 100%;
 
     box-sizing: border-box;
+    flex: 1;
 
     ${({ color }) =>
       color
